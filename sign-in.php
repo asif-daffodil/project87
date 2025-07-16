@@ -23,7 +23,8 @@ if(isset($_POST['signin'])){
             $_SESSION['user'] = [
                 'name' => $user['name'],
                 'email' => $user['email'],
-                'pic' => $user['pic'] ?? null
+                'pic' => $user['pic'] ?? null,
+                'role' => $user['role']
             ];
             header("Location: index.php");
             exit();

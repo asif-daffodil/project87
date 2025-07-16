@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jul 13, 2025 at 01:54 PM
+-- Generation Time: Jul 16, 2025 at 04:29 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -42,7 +42,7 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `name`, `email`, `pass`, `pic`, `role`, `created_at`) VALUES
-(1, 'Asif Abir', 'asif@gmail.com', '$2y$10$qxk3nhea152eO5lFiavtFemG8askFOFmnNj4qF/7s19P/gcP0s2MO', '', 'admin', '2025-07-13 11:13:21'),
+(1, 'Asif Abir', 'asif@gmail.com', '$2y$10$qxk3nhea152eO5lFiavtFemG8askFOFmnNj4qF/7s19P/gcP0s2MO', 'profile_6877a7854890a6.07031197.jpg', 'admin', '2025-07-13 11:13:21'),
 (3, 'Moni', 'moni@gmail.com', '$2y$10$9fmlE3F.qz9VVVaTiWvDbOxAtuy7sai1IdpMAEfpbcmuZ8PsalMVi', '', 'user', '2025-07-13 11:22:37');
 
 --

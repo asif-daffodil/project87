@@ -1,29 +1,6 @@
 <?php
 require_once('./header.php');
 
-
-
-// addCategory
-if (isset($_POST['addCategory'])) {
-    $categoryName = mysqli_real_escape_string($conn, $_POST['categoryName']);
-    $insertQuery = "INSERT INTO categories (name) VALUES ('$categoryName')";
-    if (mysqli_query($conn, $insertQuery)) {
-        // Add sweetalert success message
-        echo "<script>
-            Swal.fire({
-                title: 'Success',
-                text: 'Category added successfully!',
-                icon: 'success',
-                timer: 2000,
-                showConfirmButton: false,
-
-            })
-        </script>";
-    } else {
-        echo "Error: " . mysqli_error($conn);
-    }
-}
-
 // select all categories from the database
 $query = "SELECT * FROM categories ORDER BY id DESC";
 $catResult = mysqli_query($conn, $query);
@@ -40,7 +17,8 @@ $catResult = mysqli_query($conn, $query);
             <div class="flex-grow-1 overflow-y-scroll py-5">
                 <div class="row">
                     <div class="col-md-12 py-4">
-                        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#category">Manage Category</button>
+                        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#category">Manage
+                            Category</button>
                     </div>
                 </div>
             </div>
@@ -63,7 +41,7 @@ $catResult = mysqli_query($conn, $query);
                 <!-- Category management content goes here -->
                 <div class="row">
                     <div class="col-md-6">
-                        <?php if ($catResult->num_rows > 0) {  ?>
+                        <?php if ($catResult->num_rows > 0) { ?>
                             <table class="table table-striped" id="categoryTable">
                                 <thead>
                                     <tr>
@@ -72,21 +50,8 @@ $catResult = mysqli_query($conn, $query);
                                         <th>Action</th>
                                     </tr>
                                 </thead>
-                                <tbody>
-                                    <?php
-                                    $sn = 1;
-                                    while ($row = mysqli_fetch_assoc($catResult)) {
-                                        echo "<tr>
-                                        <td>{$sn}</td>
-                                        <td>{$row['name']}</td>
-                                        <td>
-                                            <button class='btn btn-sm btn-primary' onclick='editCat({$row['id']})'>Edit</button>
-                                            <button class='btn btn-sm btn-danger' onclick='delCat({$row['id']})'>Delete</button>
-                                        </td>
-                                      </tr>";
-                                        $sn++;
-                                    }
-                                    ?>
+                                <tbody id="categoryTableBody">
+
                                 </tbody>
                             </table>
                         <?php } else { ?>
@@ -94,12 +59,14 @@ $catResult = mysqli_query($conn, $query);
                         <?php } ?>
                     </div>
                     <div class="col-md-6">
-                        <form action="<?= $_SERVER['PHP_SELF'] ?>" method="POST">
+                        <form action="<?= $_SERVER['PHP_SELF'] ?>" method="POST" id="addCategoryForm">
                             <div class="mb-3">
                                 <label for="categoryName" class="form-label">Category Name</label>
-                                <input type="text" class="form-control" id="categoryName" name="categoryName" required>
+                                <input type="text" class="form-control" id="categoryName" name="categoryName" data-id=""
+                                    required>
                             </div>
-                            <button type="submit" class="btn btn-primary" name="addCategory" id="addCatBtn">Add Category</button>
+                            <button type="submit" class="btn btn-primary" name="addCategory" id="addCatBtn">Add
+                                Category</button>
                         </form>
                     </div>
                 </div>
@@ -109,9 +76,57 @@ $catResult = mysqli_query($conn, $query);
 </div>
 
 <script>
-    let table = new DataTable('#categoryTable', {
-        "lengthMenu": [5, 10, 25, 50, 100],
-    });
+
+    // get all categories using AJAX
+    const getCatData = () => {
+        $.ajax({
+            url: '/admin/ajax/get_all_category.php',
+            type: 'GET',
+            success: function (response) {
+                response = JSON.parse(response);
+                if (response.success) {
+                    let rows = '';
+                    response.data.forEach((category, index) => {
+                        rows += `<tr id="cat-${category.id}">
+                        <td>${index + 1}</td>
+                        <td>${category.name}</td>
+                        <td>
+                            <button class='btn btn-sm btn-primary' onclick='editCat(${category.id})'>Edit</button>
+                            <button class='btn btn-sm btn-danger' onclick='delCat(${category.id})'>Delete</button>
+                        </td>
+                    </tr>`;
+                    });
+
+                    // Destroy previous DataTable if exists
+                    if ($.fn.DataTable.isDataTable('#categoryTable')) {
+                        $('#categoryTable').DataTable().clear().destroy();
+                    }
+
+                    $('#categoryTableBody').html(rows);
+
+                    // Re-initialize DataTable
+                    $('#categoryTable').DataTable({
+                        "lengthMenu": [5, 10, 25, 50, 100],
+                    });
+                } else {
+                    Swal.fire(
+                        'Error!',
+                        'There was an error fetching the categories.',
+                        'error'
+                    );
+                }
+            },
+            error: function () {
+                Swal.fire(
+                    'Error!',
+                    'There was an error processing your request.',
+                    'error'
+                );
+            }
+        });
+    }
+
+    getCatData();
 
     const delCat = id => {
         Swal.fire({
@@ -126,12 +141,12 @@ $catResult = mysqli_query($conn, $query);
             if (result.isConfirmed) {
                 // Make an AJAX request to delete the category
                 $.ajax({
-                    url: 'delete_category.php',
+                    url: '/admin/ajax/delete_category.php',
                     type: 'POST',
                     data: {
                         id: id
                     },
-                    success: function(response) {
+                    success: function (response) {
                         response = JSON.parse(response);
                         if (response.success) {
                             Swal.fire({
@@ -140,9 +155,9 @@ $catResult = mysqli_query($conn, $query);
                                 icon: 'success',
                                 timer: 2000,
                                 showConfirmButton: false
-                            }).then(() => {
-                                location.reload(); // Reload the page to see the changes
-                            });
+                            })
+                            // Reload the categories table and data table
+                            getCatData();
                         } else {
                             Swal.fire(
                                 'Error!',
@@ -151,7 +166,7 @@ $catResult = mysqli_query($conn, $query);
                             );
                         }
                     },
-                    error: function() {
+                    error: function () {
                         Swal.fire(
                             'Error!',
                             'There was an error processing your request.',
@@ -166,18 +181,19 @@ $catResult = mysqli_query($conn, $query);
     const editCat = id => {
         // Fetch the category data using AJAX
         $.ajax({
-            url: 'get_category.php',
+            url: '/admin/ajax/get_category.php',
             type: 'POST',
             data: {
                 id: id
             },
-            success: function(response) {
+            success: function (response) {
                 response = JSON.parse(response);
                 if (response.success) {
                     // Populate the form with the category data
                     $('#categoryName').val(response.data.name);
                     // Show the modal
                     $('#addCatBtn').text('Update Category');
+                    $('#categoryName').data('id', response.data.id);
                 } else {
                     Swal.fire(
                         'Error!',
@@ -186,7 +202,7 @@ $catResult = mysqli_query($conn, $query);
                     );
                 }
             },
-            error: function() {
+            error: function () {
                 Swal.fire(
                     'Error!',
                     'There was an error processing your request.',
@@ -195,4 +211,88 @@ $catResult = mysqli_query($conn, $query);
             }
         });
     }
+
+    // Handle form submission for adding/updating category
+    $('#addCategoryForm').on('submit', function (e) {
+        e.preventDefault();
+        const formData = $(this).serialize();
+        if ($('#addCatBtn').text().trim().replace(/\s+/g, ' ') === 'Add Category') {
+            $.ajax({
+                url: '/admin/ajax/add_category.php',
+                type: 'POST',
+                data: formData,
+                success: function (response) {
+                    response = JSON.parse(response);
+                    if (response.success) {
+                        Swal.fire({
+                            title: 'Success!',
+                            text: response.message,
+                            icon: 'success',
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
+                        // Optionally, you can reload the categories table or append the new category
+                        $('#addCategoryForm')[0].reset();
+                        getCatData();
+
+                    } else {
+                        Swal.fire(
+                            'Error!',
+                            response.error,
+                            'error'
+                        );
+                    }
+                },
+                error: function () {
+                    Swal.fire(
+                        'Error!',
+                        'There was an error processing your request.',
+                        'error'
+                    );
+                }
+            });
+        }
+
+        if ($('#addCatBtn').text() === 'Update Category') {
+            // Update category logic
+            const id = $('#categoryName').data('id'); // Assuming you set the ID in data-id attribute
+            $.ajax({
+                url: '/admin/ajax/update_category.php',
+                type: 'POST',
+                data: {
+                    id: id,
+                    categoryName: $('#categoryName').val()
+                },
+                success: function (response) {
+                    response = JSON.parse(response);
+                    if (response.success) {
+                        Swal.fire({
+                            title: 'Updated!',
+                            text: 'Category updated successfully.',
+                            icon: 'success',
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
+                        // Reload the categories table and data table
+                        getCatData();
+                        $('#addCategoryForm')[0].reset();
+                        $('#addCatBtn').text('Add Category');
+                    } else {
+                        Swal.fire(
+                            'Error!',
+                            response.error,
+                            'error'
+                        );
+                    }
+                },
+                error: function () {
+                    Swal.fire(
+                        'Error!',
+                        'There was an error processing your request.',
+                        'error'
+                    );
+                }
+            });
+        }
+    });
 </script>

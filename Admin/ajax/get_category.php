@@ -1,5 +1,5 @@
 <?php  
-    require_once('./db.php');
+    require_once('../db.php');
 
     if ($_POST['id']) {
         $id = mysqli_real_escape_string($conn, $_POST['id']);

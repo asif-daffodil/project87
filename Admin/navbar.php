@@ -1,4 +1,4 @@
-<nav class="navbar navbar-expand-lg bg-dark navbar-dark position-absolute top-0 start-0 w-100">
+<nav class="navbar navbar-expand-lg bg-dark navbar-dark position-fixed z-2 top-0 start-0 w-100">
   <div class="container-fluid px-3">
     <a class="navbar-brand" href="#">eCommerce</a>
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">

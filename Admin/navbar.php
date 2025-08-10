@@ -10,7 +10,7 @@
           <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
             <?= $_SESSION['user']['name']  ?>
           </a>
-          <ul class="dropdown-menu dropdown-menu-end">
+          <ul class="dropdown-menu dropdown-menu-end bg-light">
             <li><a class="dropdown-item" href="../password-change.php">Password Change</a></li>
             <li><a class="dropdown-item" href="../profile-picture.php">Update Profile Picture</a></li>
             <li><a class="dropdown-item" href="../settings.php">Settings</a></li>

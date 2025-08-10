@@ -43,10 +43,10 @@ $result = mysqli_query($conn, $query);
             <div class="bg-dark text-white px-3 overflow-y-scroll flex-shrink-0 py-5" style="width: 260px;">
                 <?php require_once('./sidebar.php'); ?>
             </div>
-            <div class="flex-grow-1 overflow-y-scroll py-5">
+            <div class="flex-grow-1 overflow-y-scroll my-5">
                 <div class="row">
-                    <div class="col-md-12 py-4">
-                        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#category">Manage
+                    <div class="col-md-12 my-4">
+                        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#category" ;">Manage
                             Category</button>
                         <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#product">Add New
                             Product</button>
@@ -77,7 +77,7 @@ $result = mysqli_query($conn, $query);
                                         echo "<td style='max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;'>" . $row['description'] . "</td>";
                                         echo "<td><img src='../images/products/" . $row['image'] . "' alt='" . $row['name'] . "' width='50'></td>";
                                         echo "<td>
-                                        <button class='btn btn-sm btn-primary'>Edit</button>
+                                        <button class='btn btn-sm btn-primary editProductBtn' data-bs-toggle='modal' data-bs-target='#editProduct' data-id='" . $row['id'] . "'>Edit</button>
                                         <button class='btn btn-sm btn-danger'>Delete</button>
                                     </td>";
                                         echo "</tr>";
@@ -182,6 +182,57 @@ $result = mysqli_query($conn, $query);
                             required>
                     </div>
                     <button type="submit" class="btn btn-primary" name="addProduct">Add Product</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit product modal -->
+<div class="modal fade" id="editProduct" tabindex="-1" aria-labelledby="editProductLabel" aria-hidden="true">
+    <div class="modal-dialog modal-fullscreen">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editProductLabel">Edit Product</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Edit product form goes here -->
+                <form action="<?= $_SERVER['PHP_SELF'] ?>" method="POST" enctype="multipart/form-data" id="editProductForm">
+                    <!-- Add your product form fields here -->
+                    <input type="hidden" name="productId" id="productId">
+                    <div class="mb-3">
+                        <label for="editProductName" class="form-label">Product Name</label>
+                        <input type="text" class="form-control" id="editProductName" name="editProductName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editProductCategory" class="form-label">Category</label>
+                        <select class="form-select" id="editProductCategory" name="editProductCategory" required>
+                            <option value="">Select Category</option>
+                            <?php 
+                            $query = "SELECT * FROM categories ORDER BY id DESC";
+                            $catResult = mysqli_query($conn, $query);
+                            while ($row = mysqli_fetch_assoc($catResult)) { 
+                            ?>
+                                <option value="<?= $row['id'] ?>"><?= $row['name'] ?></option>
+                            <?php } ?>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editProductPrice" class="form-label">Price</label>
+                        <input type="number" class="form-control" id="editProductPrice" name="editProductPrice" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editProductDescription" class="form-label">Description</label>
+                        <textarea class="form-control" id="editProductDescription" name="editProductDescription" rows="3"
+                            required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        
+                        <label for="editProductImage" class="form-label"><img src="" alt="" class="img-fluid mb-3" id="editProductImagePreview" style="height: 200px;"></label>
+                        <input type="file" class="form-control" id="editProductImage" name="editProductImage" accept="image/*">
+                    </div>
+                    <button type="submit" class="btn btn-primary" name="editProduct">Save Changes</button>
                 </form>
             </div>
         </div>
@@ -410,5 +461,49 @@ $result = mysqli_query($conn, $query);
 
     $('#productTable').DataTable({
         "lengthMenu": [5, 10, 25, 50, 100],
+    });
+
+    $(".editProductBtn").on("click", function() {
+        const productId = $(this).data("id");
+        // Fetch product data using AJAX
+        $.ajax({
+            url: '/admin/ajax/get_product.php',
+            type: 'POST',
+            data: {
+                id: productId
+            },
+            success: function(response) {
+                response = JSON.parse(response);
+                if (response.success) {
+                    // Populate the form with the product data
+                    $('#productId').val(response.data.id);
+                    $('#editProductName').val(response.data.name);
+                    $('#editProductPrice').val(response.data.price);
+                    $('#editProductCategory').children('option').each(function() {
+                        if ($(this).val() == response.data.category_id) {
+                            $(this).prop('selected', true);
+                        }else{
+                            $(this).prop('selected', false);
+                        }
+                    });
+                    $('#editProductImagePreview').attr('src', '../images/products/' + response.data.image);
+                    $('#editProductImagePreview').attr('alt', response.data.name);
+                    $('#editProductDescription').val(response.data.description);
+                } else {
+                    Swal.fire(
+                        'Error!',
+                        'There was an error fetching the product data.',
+                        'error'
+                    );
+                }
+            },
+            error: function() {
+                Swal.fire(
+                    'Error!',
+                    'There was an error processing your request.',
+                    'error'
+                );
+            }
+        });
     });
 </script>

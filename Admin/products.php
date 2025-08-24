@@ -26,6 +26,41 @@ if (isset($_POST['addProduct'])) {
     }
 }
 
+// editProduct button for updating product
+if (isset($_POST['editProduct'])) {
+    $productName = $_POST['name'];
+    $productCategory = $_POST['category_id'];
+    $productPrice = $_POST['price'];
+    $productDescription = trim(htmlspecialchars(stripslashes($_POST['description'])));
+    $productImage = $_FILES['image']['name'];
+    $productImageTemp = $_FILES['image']['tmp_name'];
+
+    // if no new image is uploaded, ignore the image update
+    if ($productImage == "") {
+        // update other fields without changing the image
+        $query = "UPDATE products SET name='$productName', category_id=$productCategory, price=$productPrice, description='$productDescription' WHERE id=" . $_POST['productId'];
+        $result = mysqli_query($conn, $query);
+    } else {
+        // delete old image, upload new image and then update the database
+        $query = "SELECT image FROM products WHERE id=" . $_POST['productId'];
+        $oldImageResult = mysqli_query($conn, $query);
+        if ($oldImageResult && mysqli_num_rows($oldImageResult) > 0) {
+            $oldImageRow = mysqli_fetch_assoc($oldImageResult);
+            $oldImage = $oldImageRow['image'];
+            unlink("../images/products/$oldImage"); // delete old image
+        }
+        $productImage = time() . '_' . $productImage; // new image name to avoid conflicts
+        move_uploaded_file($productImageTemp, "../images/products/$productImage");
+        $query = "UPDATE products SET name='$productName', category_id=$productCategory, price=$productPrice, description='$productDescription', image='$productImage' WHERE id=" . $_POST['productId'];
+        $result = mysqli_query($conn, $query);
+    }
+    if ($result) {
+        echo "<script>Swal.fire('Success', 'Product updated successfully.', 'success');</script>";
+    } else {
+        echo "<script>Swal.fire('Error', 'Failed to update product. Please try again.', 'error');</script>";
+    }
+}
+
 $query = "SELECT * FROM categories ORDER BY id DESC";
 $catResult = mysqli_query($conn, $query);
 
@@ -78,7 +113,7 @@ $result = mysqli_query($conn, $query);
                                         echo "<td><img src='../images/products/" . $row['image'] . "' alt='" . $row['name'] . "' width='50'></td>";
                                         echo "<td>
                                         <button class='btn btn-sm btn-primary editProductBtn' data-bs-toggle='modal' data-bs-target='#editProduct' data-id='" . $row['id'] . "'>Edit</button>
-                                        <button class='btn btn-sm btn-danger'>Delete</button>
+                                        <button class='btn btn-sm btn-danger' onclick='delProduct(" . $row['id'] . ")'>Delete</button>
                                     </td>";
                                         echo "</tr>";
                                     }
@@ -203,11 +238,11 @@ $result = mysqli_query($conn, $query);
                     <input type="hidden" name="productId" id="productId">
                     <div class="mb-3">
                         <label for="editProductName" class="form-label">Product Name</label>
-                        <input type="text" class="form-control" id="editProductName" name="editProductName" required>
+                        <input type="text" class="form-control" id="editProductName" name="name" required>
                     </div>
                     <div class="mb-3">
                         <label for="editProductCategory" class="form-label">Category</label>
-                        <select class="form-select" id="editProductCategory" name="editProductCategory" required>
+                        <select class="form-select" id="editProductCategory" name="category_id" required>
                             <option value="">Select Category</option>
                             <?php 
                             $query = "SELECT * FROM categories ORDER BY id DESC";
@@ -220,17 +255,17 @@ $result = mysqli_query($conn, $query);
                     </div>
                     <div class="mb-3">
                         <label for="editProductPrice" class="form-label">Price</label>
-                        <input type="number" class="form-control" id="editProductPrice" name="editProductPrice" required>
+                        <input type="number" class="form-control" id="editProductPrice" name="price" required>
                     </div>
                     <div class="mb-3">
                         <label for="editProductDescription" class="form-label">Description</label>
-                        <textarea class="form-control" id="editProductDescription" name="editProductDescription" rows="3"
+                        <textarea class="form-control" id="editProductDescription" name="description" rows="3"
                             required></textarea>
                     </div>
                     <div class="mb-3">
                         
                         <label for="editProductImage" class="form-label"><img src="" alt="" class="img-fluid mb-3" id="editProductImagePreview" style="height: 200px;"></label>
-                        <input type="file" class="form-control" id="editProductImage" name="editProductImage" accept="image/*">
+                        <input type="file" class="form-control" id="editProductImage" name="image" accept="image/*">
                     </div>
                     <button type="submit" class="btn btn-primary" name="editProduct">Save Changes</button>
                 </form>
@@ -506,4 +541,57 @@ $result = mysqli_query($conn, $query);
             }
         });
     });
+
+    // Handel delete product
+    const delProduct = id => {
+        Swal.fire({
+            title: 'Are you sure?',
+            text: "You won't be able to revert this!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes, delete it!'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Make an AJAX request to delete the product
+                $.ajax({
+                    url: '/admin/ajax/delete_product.php',
+                    type: 'POST',
+                    data: {
+                        id: id
+                    },
+                    success: function(response) {
+                        response = JSON.parse(response);
+                        if (response.success) {
+                            Swal.fire({
+                                title: 'Deleted!',
+                                text: 'Your product has been deleted.',
+                                icon: 'success',
+                                timer: 2000,
+                                showConfirmButton: false
+                            })
+                            // Reload the products table after 2 seconds
+                            setTimeout(() => {
+                                location.reload();
+                            }, 2000);
+                        } else {
+                            Swal.fire(
+                                'Error!',
+                                'There was an error deleting the product.',
+                                'error'
+                            );
+                        }
+                    },
+                    error: function() {
+                        Swal.fire(
+                            'Error!',
+                            'There was an error processing your request.',
+                            'error'
+                        );
+                    }
+                });
+            }
+        })
+    }
 </script>
